@@ -835,5 +835,44 @@ class SpotifyService {
       };
     }
   }
+
+    Future<List<dynamic>> getRecommendations({
+    required List<String> seedGenres,
+    double? targetValence,
+    double? targetEnergy,
+    double? targetTempo,
+  }) async {
+
+    final token = await getAccessToken();
+
+    final uri = Uri.https(
+      'api.spotify.com',
+      '/v1/recommendations',
+      {
+        "seed_genres": seedGenres.join(','),
+        if (targetValence != null) "target_valence": targetValence.toString(),
+        if (targetEnergy != null) "target_energy": targetEnergy.toString(),
+        if (targetTempo != null) "target_tempo": targetTempo.toString(),
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {"Authorization": "Bearer $token"},
+    );
+
+    final data = jsonDecode(response.body);
+    return data['tracks'] ?? [];
+  }
+
+  Map<String, dynamic> formatTrack(Map<String, dynamic> track) {
+    return {
+      'name': track['name'] ?? 'Unknown',
+      'artist': track['artists']?[0]?['name'] ?? 'Unknown',
+      'image_url': track['album']?['images']?[0]?['url'],
+    };
+  }
+
+
 }
 

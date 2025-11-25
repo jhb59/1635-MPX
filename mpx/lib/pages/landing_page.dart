@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/spotify_service.dart';
 import '../services/auth_service.dart';
+import '../services/recommendation_service.dart';
 import '../models/mood_data.dart';
 import 'login_page.dart';
 
@@ -66,16 +67,16 @@ class _LandingPageState extends State<LandingPage> {
       // Load all data in parallel
       final results = await Future.wait([
         _spotifyService.getDetailedEmotionalForecast(),
-        _spotifyService.getSongRecommendations(limit: 10),
+        RecommendationService().getRecommendationsForMood("mellow"),
         _spotifyService.getUserPlaylists(limit: 10),
       ]);
+
 
       if (mounted) {
         setState(() {
           _emotionalForecast = results[0] as Map<String, dynamic>;
           _songRecommendations = results[1] as List<Map<String, dynamic>>;
           _playlists = results[2] as List<Map<String, dynamic>>;
-          _isLoadingData = false;
         });
       }
     } catch (e) {
@@ -86,7 +87,30 @@ class _LandingPageState extends State<LandingPage> {
         });
       }
     }
+    print("TOKEN: ${await _spotifyService.getAccessToken()}");
+
   }
+
+  Future<void> _loadMoodBasedRecommendations() async {
+    final recService = RecommendationService();
+    final mood = "mellow"; // later connect to emotional forecast
+
+    final rawTracks = await recService.getRecommendationsForMood(mood);
+
+    // Transform raw Spotify tracks into your UI-friendly format
+    final formatted = rawTracks.map<Map<String, dynamic>>((track) {
+      return {
+        'name': track['name'] ?? 'Unknown',
+        'artist': track['artists']?[0]?['name'] ?? 'Unknown',
+        'image_url': track['album']?['images']?[0]?['url'],
+      };
+    }).toList();
+
+    setState(() {
+      _songRecommendations = formatted;
+    });
+  }
+
 
   // Helper to convert mood string to MoodIcon
   MoodIcon _moodToIcon(String mood) {
