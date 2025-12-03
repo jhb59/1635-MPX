@@ -72,11 +72,12 @@ class _LandingPageState extends State<LandingPage> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => LoginPage(onLoginSuccess: () {}),
+        builder: (_) => const LoginPage(),
       ),
       (_) => false,
     );
   }
+
 
   // Helpers ------------------------------------------------------------
 
