@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Spotify Redirect</title>
+</head>
+<body style="font-family: sans-serif;">
+  <p>Finishing Spotify login… you can close this tab.</p>
+
+  <script>
+    // Extract ?code=XXXX from Spotify redirect
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+
+    if (code) {
+      // Store code so Flutter Web can read it
+      localStorage.setItem("spotify_auth_code", code);
+    }
+
+    // Redirect to your actual app UI
+    window.location.href = "/";
+  </script>
+</body>
+</html>

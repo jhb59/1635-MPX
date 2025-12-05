@@ -3,7 +3,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/spotify_service.dart';
 import '../services/auth_service.dart';
-import '../services/recommendation_service.dart';
 import '../models/mood_data.dart';
 import 'login_page.dart';
 
@@ -17,290 +16,100 @@ class LandingPage extends StatefulWidget {
 class _LandingPageState extends State<LandingPage> {
   final SpotifyService _spotifyService = SpotifyService();
   final AuthService _authService = AuthService();
-  bool _isLoading = false;
+
   bool _isLoadingData = true;
   Map<String, dynamic>? _userInfo;
 
-  // Emotional forecast data
   Map<String, dynamic>? _emotionalForecast;
-
-  // Song recommendations
-  List<Map<String, dynamic>> _songRecommendations = [];
-
-  // Playlists
   List<Map<String, dynamic>> _playlists = [];
+  List<Map<String, dynamic>> _recentTracks = [];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadUserInfo();
-        _loadAllData();
-      }
+      _loadUserInfo();
+      _loadAllData();
     });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   Future<void> _loadUserInfo() async {
+    final data = await _authService.getUserInfo();
     if (!mounted) return;
-    final userInfo = await _authService.getUserInfo();
-    if (mounted) {
-      setState(() {
-        _userInfo = userInfo;
-      });
-    }
+    setState(() => _userInfo = data);
   }
 
   Future<void> _loadAllData() async {
-    if (!mounted) return;
-
-    // Check if authenticated first
     final token = await _spotifyService.getAccessToken();
-    if (token == null) {
-      print('No access token - user not authenticated');
-      if (mounted) {
-        setState(() {
-          _isLoadingData = false;
-        });
-      }
+    if (token == null || !mounted) {
+      setState(() => _isLoadingData = false);
       return;
     }
 
-    setState(() {
-      _isLoadingData = true;
-    });
-
     try {
-      // Load all data in parallel with error handling for each
       final results = await Future.wait([
-        _spotifyService.getDetailedEmotionalForecast().catchError((e) {
-          print('Error loading emotional forecast: $e');
-          return {
-            'overall_mood': 'MELLOW',
-            'current_mood': 'MELLOW',
-            'morning_mood': 'MELLOW',
-            'weekly_forecast': [],
-            'total_tracks_analyzed': 0,
-          };
-        }),
-        RecommendationService().getRecommendationsForMood("mellow").catchError((e) {
-          print('Error loading recommendations: $e');
-          return <Map<String, dynamic>>[];
-        }),
-        _spotifyService.getUserPlaylists(limit: 10).catchError((e) {
-          print('Error loading playlists: $e');
-          return <Map<String, dynamic>>[];
-        }),
+        _spotifyService.getDetailedEmotionalForecast(),
+        _spotifyService.getUserPlaylists(limit: 10),
+        _spotifyService.getRecentlyPlayedTracks(limit: 10),
       ]);
 
-      if (mounted) {
-        setState(() {
-          _emotionalForecast = results[0] as Map<String, dynamic>;
-          _songRecommendations = results[1] as List<Map<String, dynamic>>;
-          _playlists = results[2] as List<Map<String, dynamic>>;
-          _isLoadingData = false; // Set loading to false on success
-        });
-      }
+      setState(() {
+        _emotionalForecast = results[0] as Map<String, dynamic>;
+        _playlists = List<Map<String, dynamic>>.from(results[1] as List);
+        _recentTracks = List<Map<String, dynamic>>.from(results[2] as List);
+        _isLoadingData = false;
+      });
     } catch (e) {
-      print('Error loading data: $e');
-      if (mounted) {
-        setState(() {
-          // Set default values on error
-          _emotionalForecast = {
-            'overall_mood': 'MELLOW',
-            'current_mood': 'MELLOW',
-            'morning_mood': 'MELLOW',
-            'weekly_forecast': [],
-            'total_tracks_analyzed': 0,
-          };
-          _songRecommendations = [];
-          _playlists = [];
-          _isLoadingData = false;
-        });
-      }
+      print("Error loading data: $e");
+      setState(() => _isLoadingData = false);
     }
-
   }
 
-  Future<void> _loadMoodBasedRecommendations() async {
-    final recService = RecommendationService();
-    final mood = "mellow"; // later connect to emotional forecast
+  Future<void> _logout() async {
+    await _authService.logout();
+    if (!mounted) return;
 
-    final rawTracks = await recService.getRecommendationsForMood(mood);
-
-    // Transform raw Spotify tracks into your UI-friendly format
-    final formatted = rawTracks.map<Map<String, dynamic>>((track) {
-      return {
-        'name': track['name'] ?? 'Unknown',
-        'artist': track['artists']?[0]?['name'] ?? 'Unknown',
-        'image_url': track['album']?['images']?[0]?['url'],
-      };
-    }).toList();
-
-    setState(() {
-      _songRecommendations = formatted;
-    });
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginPage(),
+      ),
+      (_) => false,
+    );
   }
 
 
-  // Helper to convert mood string to MoodIcon
+  // Helpers ------------------------------------------------------------
+
   MoodIcon _moodToIcon(String mood) {
     switch (mood.toUpperCase()) {
       case 'UPBEAT':
         return MoodIcon.sunny;
       case 'SAD':
         return MoodIcon.sad;
-      case 'MELLOW':
       default:
         return MoodIcon.mellow;
     }
   }
 
-  Future<void> _handleLogout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await _authService.logout();
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => LoginPage(
-              onLoginSuccess: () {},
-            ),
-          ),
-          (route) => false,
-        );
-      }
-    }
-  }
-
-  Widget _buildUserAvatar() {
-    final images = _userInfo!['images'] as List?;
-    String? imageUrl;
-
-    if (images != null && images.isNotEmpty) {
-      try {
-        final smallImage = images.firstWhere(
-          (img) => img['width'] == 64 || img['height'] == 64,
-          orElse: () => images[0],
-        );
-        imageUrl = smallImage['url'] as String?;
-      } catch (e) {
-        imageUrl = images[0]['url'] as String?;
-      }
-    }
-
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      return RepaintBoundary(
-        child: ClipOval(
-          child: Image.network(
-            imageUrl,
-            width: 32,
-            height: 32,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              final displayName = _userInfo!['display_name'] as String? ?? 'U';
-              final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
-              return CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.black,
-                child: Text(
-                  initial,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              );
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return const SizedBox(
-                width: 32,
-                height: 32,
-                child: Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-    } else {
-      final displayName = _userInfo!['display_name'] as String? ?? 'U';
-      final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
-      return CircleAvatar(
-        radius: 16,
-        backgroundColor: Colors.black,
-        child: Text(
-          initial,
-          style: const TextStyle(color: Colors.white),
-        ),
-      );
-    }
-  }
-
   Widget _buildMoodIcon(MoodIcon icon, {double size = 60}) {
-    String assetPath;
-    switch (icon) {
-      case MoodIcon.sunny:
-        assetPath = 'assets/icons/sun.svg';
-        break;
-      case MoodIcon.cloudy:
-        assetPath = 'assets/icons/cloud.svg';
-        break;
-      case MoodIcon.rainy:
-        assetPath = 'assets/icons/cloud_rain.svg';
-        break;
-      case MoodIcon.sad:
-        assetPath = 'assets/icons/sad.svg';
-        break;
-      case MoodIcon.mellow:
-        assetPath = 'assets/icons/cloud_sun.svg';
-        break;
-    }
+    const icons = {
+      MoodIcon.sunny: 'assets/icons/sun.svg',
+      MoodIcon.cloudy: 'assets/icons/cloud.svg',
+      MoodIcon.rainy: 'assets/icons/cloud_rain.svg',
+      MoodIcon.sad: 'assets/icons/sad.svg',
+      MoodIcon.mellow: 'assets/icons/cloud_sun.svg',
+    };
 
     return SvgPicture.asset(
-      assetPath,
+      icons[icon]!,
       width: size,
       height: size,
       colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
-      placeholderBuilder: (context) => Container(
-        width: size,
-        height: size,
-        color: Colors.grey[200],
-      ),
-      semanticsLabel: 'Mood icon',
     );
   }
 
-  Widget _buildPanel({
-    required String title,
-    Widget? child,
-    String? buttonText,
-    VoidCallback? onButtonPressed,
-  }) {
+  Widget _panel({required String title, required Widget child}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey[200],
@@ -310,258 +119,140 @@ class _LandingPageState extends State<LandingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
-          ),
-          if (child != null) ...[
-            const SizedBox(height: 16),
-            Expanded(child: child),
-          ],
-          if (buttonText != null && onButtonPressed != null) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : onButtonPressed,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(0),
-                  ),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.play_arrow, size: 16),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              buttonText,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-          ],
+          Text(title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 16),
+          Expanded(child: child),
         ],
       ),
     );
   }
 
-  Widget _buildEmotionalForecastPanel() {
+  // Emotional Forecast --------------------------------------------------
+
+  Widget _buildEmotionalForecast() {
     if (_isLoadingData || _emotionalForecast == null) {
-      return _buildPanel(
-        title: 'EMOTIONAL FORECAST',
-        child: const Center(
-          child: CircularProgressIndicator(
-            color: Colors.black,
-          ),
-        ),
+      return _panel(
+        title: "EMOTIONAL FORECAST",
+        child: const Center(child: CircularProgressIndicator(color: Colors.black)),
       );
     }
 
-    final overallMood = _emotionalForecast!['overall_mood'] as String? ?? 'MELLOW';
-    final weeklyForecast = _emotionalForecast!['weekly_forecast'] as List? ?? [];
-    final totalTracks = _emotionalForecast!['total_tracks_analyzed'] as int? ?? 0;
+    final mood = _moodToIcon(_emotionalForecast!['overall_mood']);
+    final week = _emotionalForecast!['weekly_forecast'] ?? [];
+    final total = _emotionalForecast!['total_tracks_analyzed'] ?? 0;
 
-    return _buildPanel(
-      title: 'EMOTIONAL FORECAST',
+    return _panel(
+      title: "EMOTIONAL FORECAST",
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Overall mood
-            Row(
-              children: [
-                _buildMoodIcon(_moodToIcon(overallMood), size: 80),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'OVERALL',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        overallMood,
-                        style: const TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
+            Row(children: [
+              _buildMoodIcon(mood, size: 80),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  _emotionalForecast!['overall_mood'] ?? "",
+                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
                 ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            // Weekly forecast
-            const Text(
-              'WEEKLY FORECAST',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
               ),
-            ),
-            const SizedBox(height: 16),
-            ...weeklyForecast.map((dayData) {
-              final day = dayData['day'] as String? ?? '';
-              final mood = dayData['mood'] as String? ?? 'MELLOW';
+            ]),
+            const SizedBox(height: 24),
+            const Text("WEEKLY FORECAST",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ...week.map<Widget>((d) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 60,
-                      child: Text(
-                        day,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    _buildMoodIcon(_moodToIcon(mood), size: 32),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        mood,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(children: [
+                  SizedBox(width: 60, child: Text(d['day'] ?? "")),
+                  _buildMoodIcon(_moodToIcon(d['mood']), size: 30),
+                  const SizedBox(width: 12),
+                  Text(
+                    d['mood'] ?? "",
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ]),
               );
             }),
-            const SizedBox(height: 16),
-            Text(
-              'Based on $totalTracks tracks analyzed',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.black54,
-              ),
-            ),
+            const SizedBox(height: 12),
+            Text("Based on $total tracks analyzed",
+                style: const TextStyle(fontSize: 11)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSongRecommendationsPanel() {
+  // Recently Played -----------------------------------------------------
+
+  Widget _buildRecentlyPlayed() {
     if (_isLoadingData) {
-      return _buildPanel(
-        title: 'SONG RECOMMENDATIONS',
-        child: const Center(
-          child: CircularProgressIndicator(color: Colors.black),
-        ),
+      return _panel(
+        title: "RECENTLY PLAYED",
+        child: const Center(child: CircularProgressIndicator(color: Colors.black)),
       );
     }
 
-    if (_songRecommendations.isEmpty) {
-      return _buildPanel(
-        title: 'SONG RECOMMENDATIONS',
-        child: const Center(
-          child: Text('No recommendations available'),
-        ),
+    if (_recentTracks.isEmpty) {
+      return _panel(
+        title: "RECENTLY PLAYED",
+        child: const Center(child: Text("No recent tracks found")),
       );
     }
 
-    return _buildPanel(
-      title: 'SONG RECOMMENDATIONS',
-      child: ListView.builder(
-        itemCount: _songRecommendations.length,
-        itemBuilder: (context, index) {
-          final song = _songRecommendations[index];
-          final name = song['name'] as String? ?? 'Unknown';
-          final artist = song['artist'] as String? ?? 'Unknown';
-          final imageUrl = song['image_url'] as String?;
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+    return _panel(
+      title: "RECENTLY PLAYED",
+      child: ListView.separated(
+        itemCount: _recentTracks.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (_, i) {
+          final t = _recentTracks[i];
+         return InkWell(
+            onTap: () async {
+              final url = t['external_url'];
+              if (url != null) {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              }
+            },
             child: Row(
               children: [
-                if (imageUrl != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: Image.network(
-                      imageUrl,
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 48,
-                          height: 48,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.music_note),
-                        );
-                      },
-                    ),
-                  )
-                else
-                  Container(
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.network(
+                    t['image_url'] ?? "",
                     width: 48,
                     height: 48,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.music_note),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 48,
+                      height: 48,
+                      color: Colors.grey[300],
+                    ),
                   ),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        name,
+                        t['name'] ?? "Unknown",
                         style: const TextStyle(
-                          fontSize: 14,
                           fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        artist,
-                        style: TextStyle(
+                        t['artist'] ?? "Unknown",
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black54,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -574,289 +265,121 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
-  Widget _buildMostRecommendedPlaylistPanel() {
-    if (_isLoadingData) {
-      return _buildPanel(
-        title: 'MOST RECOMMENDED',
-        child: const Center(
-          child: CircularProgressIndicator(color: Colors.black),
-        ),
-      );
+  // Playlist cards ------------------------------------------------------
+
+  Widget _playlistCard(int index, {bool small = false}) {
+    if (index >= _playlists.length) {
+      return _panel(title: "RECOMMENDED", child: Container());
     }
 
-    if (_playlists.isEmpty) {
-      return _buildPanel(
-        title: 'MOST RECOMMENDED',
-        child: const Center(
-          child: Text('No playlists available'),
-        ),
-      );
-    }
+    final p = _playlists[index];
 
-    // Get the first playlist as "most recommended"
-    final playlist = _playlists[0];
-    final name = playlist['name'] as String? ?? 'Unknown';
-    final description = playlist['description'] as String? ?? '';
-    final imageUrl = playlist['image_url'] as String?;
-    final tracksCount = playlist['tracks_count'] as int? ?? 0;
-    final externalUrl = playlist['external_url'] as String?;
-
-    return _buildPanel(
-      title: 'MOST RECOMMENDED',
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (imageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  height: 100,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: double.infinity,
-                      height: 100,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.playlist_play, size: 40),
-                    );
-                  },
+    return GestureDetector(
+      onTap: () async {
+        final url = p['external_url'];
+        if (url != null) {
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        }
+      },
+      child: _panel(
+        title: small ? "RECOMMENDED" : "MOST RECOMMENDED",
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (p['image_url'] != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.network(
+                    p['image_url'],
+                    height: small ? 80 : 100,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                Container(
+                  height: small ? 80 : 100,
+                  color: Colors.grey[300],
                 ),
-              )
-            else
-              Container(
-                width: double.infinity,
-                height: 100,
-                color: Colors.grey[300],
-                child: const Icon(Icons.playlist_play, size: 40),
-              ),
-            const SizedBox(height: 8),
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (description.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               Text(
-                description,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.black54,
+                p['name'] ?? "Unknown",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                "${p['tracks_count']} tracks",
+                style: const TextStyle(fontSize: 11),
               ),
             ],
-            const SizedBox(height: 4),
-            Text(
-              '$tracksCount tracks',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.black54,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-      buttonText: 'OPEN PLAYLIST',
-      onButtonPressed: externalUrl != null
-          ? () async {
-              final uri = Uri.parse(externalUrl);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri);
-              }
-            }
-          : null,
     );
+
   }
 
-  Widget _buildOtherPlaylistPanel(int index) {
-    if (_isLoadingData || index + 1 >= _playlists.length) {
-      return _buildPanel(
-        title: 'RECOMMENDED PLAYLIST',
-        child: const Center(
-          child: Text('No playlist available'),
-        ),
-      );
-    }
-
-    final playlist = _playlists[index + 1];
-    final name = playlist['name'] as String? ?? 'Unknown';
-    final imageUrl = playlist['image_url'] as String?;
-    final tracksCount = playlist['tracks_count'] as int? ?? 0;
-    final externalUrl = playlist['external_url'] as String?;
-
-    return _buildPanel(
-      title: 'RECOMMENDED PLAYLIST',
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (imageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: double.infinity,
-                      height: 80,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.playlist_play, size: 28),
-                    );
-                  },
-                ),
-              )
-            else
-              Container(
-                width: double.infinity,
-                height: 80,
-                color: Colors.grey[300],
-                child: const Icon(Icons.playlist_play, size: 28),
-              ),
-            const SizedBox(height: 6),
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '$tracksCount tracks',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.black54,
-              ),
-            ),
-          ],
-        ),
-      ),
-      buttonText: 'OPEN',
-      onButtonPressed: externalUrl != null
-          ? () async {
-              final uri = Uri.parse(externalUrl);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri);
-              }
-            }
-          : null,
-    );
-  }
+  // Build UI ------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          actions: [
-            if (_userInfo != null)
-              RepaintBoundary(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      _buildUserAvatar(),
-                      const SizedBox(width: 8),
-                      Text(
-                        _userInfo!['display_name'] ?? 'User',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      IconButton(
-                        icon: const Icon(Icons.logout, color: Colors.black),
-                        onPressed: _handleLogout,
-                        tooltip: 'Logout',
-                      ),
-                    ],
-                  ),
-                ),
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        actions: [
+          if (_userInfo != null)
+            Row(children: [
+              Text(
+                _userInfo!['display_name'] ?? "User",
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-          ],
-        ),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SizedBox(
-                  height: constraints.maxHeight,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                // Column 1: Full Emotional Forecast
-                Expanded(
-                  flex: 1,
-                  child: _buildEmotionalForecastPanel(),
-                ),
-                const SizedBox(width: 16),
-                // Column 2: Song Recommendations (2/3) + Most Recommended Playlist (1/3)
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    children: [
-                      // Song Recommendations - 2/3 height
-                      Expanded(
-                        flex: 2,
-                        child: _buildSongRecommendationsPanel(),
-                      ),
-                      const SizedBox(height: 12),
-                      // Most Recommended Playlist - 1/3 height
-                      Expanded(
-                        flex: 1,
-                        child: _buildMostRecommendedPlaylistPanel(),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Column 3: Three equal playlists
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: _buildOtherPlaylistPanel(0),
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: _buildOtherPlaylistPanel(1),
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: _buildOtherPlaylistPanel(2),
-                      ),
-                    ],
-                  ),
-                ),
-                    ], // Close Row children
-                  ), // Close Row
-                ); // Close SizedBox
-              },
-            ),
+              IconButton(
+                onPressed: _logout,
+                icon: const Icon(Icons.logout, color: Colors.black),
+              ),
+            ])
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(children: [
+          // Left
+          Expanded(flex: 1, child: _buildEmotionalForecast()),
+
+          const SizedBox(width: 16),
+
+          // Middle
+          Expanded(
+            flex: 1,
+            child: Column(children: [
+              Expanded(flex: 2, child: _buildRecentlyPlayed()),
+              const SizedBox(height: 12),
+              Expanded(flex: 1, child: _playlistCard(0)),
+            ]),
           ),
-        ),
+
+          const SizedBox(width: 16),
+
+          // Right
+          Expanded(
+            flex: 1,
+            child: Column(children: [
+              Expanded(child: _playlistCard(1, small: true)),
+              const SizedBox(height: 12),
+              Expanded(child: _playlistCard(2, small: true)),
+              const SizedBox(height: 12),
+              Expanded(child: _playlistCard(3, small: true)),
+            ]),
+          ),
+        ]),
       ),
     );
   }

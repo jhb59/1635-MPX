@@ -2,34 +2,34 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'spotify_service.dart';
 
 class AuthService {
-  final SpotifyService _spotifyService = SpotifyService();
+  final SpotifyService spotify = SpotifyService();
 
-  // Check if user is authenticated
+  /// Start Spotify OAuth (opens login page)
+  Future<void> startLogin() async {
+    await spotify.authenticate();
+  }
+
+  /// Handle the authorization code returned after redirect
+  Future<void> handleCallback(String code) async {
+    await spotify.exchangeCodeForToken(code);
+  }
+
+  /// Return true if we have a valid access token
   Future<bool> isAuthenticated() async {
-    final token = await _spotifyService.getAccessToken();
+    final token = await spotify.getAccessToken();
     return token != null;
   }
 
-  // Get user info
+  /// Get the logged-in user's Spotify profile
   Future<Map<String, dynamic>?> getUserInfo() async {
-    final token = await _spotifyService.getAccessToken();
-    if (token == null) return null;
-
-    try {
-      final response = await _spotifyService.getUserProfile();
-      return response;
-    } catch (e) {
-      return null;
-    }
+    return await spotify.getUserProfile();
   }
 
-  // Logout
+  /// Clear all tokens
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('spotify_access_token');
-    await prefs.remove('spotify_token_expiry');
+    await prefs.remove("access_token");
+    await prefs.remove("refresh_token");
+    await prefs.remove("expires_at");
   }
-
-  SpotifyService get spotifyService => _spotifyService;
 }
-
