@@ -87,6 +87,8 @@ class _LandingPageState extends State<LandingPage> {
         return MoodIcon.sunny;
       case 'SAD':
         return MoodIcon.sad;
+      case 'UNREADABLE':
+        return MoodIcon.sad; // placeholder for unreadable mood
       default:
         return MoodIcon.mellow;
     }
