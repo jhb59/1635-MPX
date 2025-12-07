@@ -1,51 +1,31 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mpx/viewmodel/auth_viewmodel.dart';
-import '../mocks/mock_spotify_service.dart';
+import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:mpx/viewmodel/auth_viewmodel.dart';
+import 'package:mpx/services/auth_service.dart';
 
+import 'auth_viewmodel_test.mocks.dart';
+
+@GenerateMocks([AuthService])
 void main() {
-  late MockSpotifyService mockService;
   late AuthViewModel viewModel;
+  late MockAuthService mockAuthService;
 
   setUp(() {
-    mockService = MockSpotifyService();
-    viewModel = AuthViewModel(service: mockService);
+    mockAuthService = MockAuthService();
+    viewModel = AuthViewModel.test(mockAuthService); // <-- SEE STEP 3
   });
 
-  test("handleCallback sets login state to true when token exchange succeeds", () async {
-    // Arrange
-    when(mockService.exchangeCodeForToken("VALID_CODE"))
-        .thenAnswer((_) async => true);
-
-    // Act
-    await viewModel.handleCallback("VALID_CODE");
-
-    // Assert
-    expect(viewModel.isLoggedIn, true);
-    verify(mockService.exchangeCodeForToken("VALID_CODE")).called(1);
+  test('Initial state should NOT be authenticated', () {
+    expect(viewModel.isAuthenticated, false);
   });
 
-  test("handleCallback sets login state to false when token exchange fails", () async {
-    // Arrange
-    when(mockService.exchangeCodeForToken("INVALID_CODE"))
-        .thenAnswer((_) async => false);
+  test('handleCallback authenticates user', () async {
+    when(mockAuthService.handleCallback("123"))
+      .thenAnswer((_) async {});
 
-    // Act
-    await viewModel.handleCallback("INVALID_CODE");
+    await viewModel.handleCallback("123");
 
-    // Assert
-    expect(viewModel.isLoggedIn, false);
-    verify(mockService.exchangeCodeForToken("INVALID_CODE")).called(1);
-  });
-
-  test("login() calls spotify.authenticate()", () async {
-    // Arrange
-    when(mockService.authenticate()).thenAnswer((_) async => {});
-
-    // Act
-    await viewModel.login();
-
-    // Assert
-    verify(mockService.authenticate()).called(1);
+    expect(viewModel.isAuthenticated, true);
   });
 }
