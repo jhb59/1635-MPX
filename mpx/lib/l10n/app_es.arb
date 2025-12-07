@@ -1,0 +1,40 @@
+{
+  "@@locale": "es",
+  "title": "RASTREADOR DE ESTADO DE ÁNIMO",
+  "subtitle": "MP-X",
+  "loginDescription": "Conéctate con Spotify para crear listas de reproducción personalizadas según tu estado emocional.",
+  "continueWithSpotify": "CONTINUAR CON SPOTIFY",
+  "enterCodeManually": "Ingresar código manualmente",
+  "hideManualEntry": "Ocultar ingreso manual",
+  "authorizationCode": "Código de autorización",
+  "submitCode": "ENVIAR CÓDIGO",
+  "checkStatus": "VERIFICAR ESTADO",
+  "notAuthenticated": "Aún no autenticado.",
+  
+  "emotionalForecast": "PRONÓSTICO EMOCIONAL",
+  "weeklyForecast": "PRONÓSTICO SEMANAL",
+  "recentlyPlayed": "REPRODUCIDO RECIENTEMENTE",
+  "recommended": "RECOMENDADO",
+  "mostRecommended": "MÁS RECOMENDADO",
+  "noRecentTracks": "No se encontraron canciones recientes",
+  "unknown": "Desconocido",
+  "user": "Usuario",
+
+  "trackCount": "{count} canciones",
+  "@trackCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "tracksAnalyzed": "Basado en {count} canciones analizadas",
+  "@tracksAnalyzed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}

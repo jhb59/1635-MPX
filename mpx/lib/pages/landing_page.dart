@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
 import '../services/spotify_service.dart';
 import '../services/auth_service.dart';
 import '../models/mood_data.dart';
 import 'login_page.dart';
+import '../l10n/app_localizations.dart';
 
 class LandingPage extends StatefulWidget {
-  const LandingPage({super.key});
+  final VoidCallback onToggleLanguage;
+
+  const LandingPage({super.key, required this.onToggleLanguage});
 
   @override
   State<LandingPage> createState() => _LandingPageState();
@@ -72,14 +76,13 @@ class _LandingPageState extends State<LandingPage> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => const LoginPage(),
+        builder: (_) => LoginPage(onToggleLanguage: widget.onToggleLanguage),
       ),
       (_) => false,
     );
   }
 
-
-  // Helpers ------------------------------------------------------------
+  // -------------------- HELPERS --------------------
 
   MoodIcon _moodToIcon(String mood) {
     switch (mood.toUpperCase()) {
@@ -88,7 +91,7 @@ class _LandingPageState extends State<LandingPage> {
       case 'SAD':
         return MoodIcon.sad;
       case 'UNREADABLE':
-        return MoodIcon.sad; // placeholder for unreadable mood
+        return MoodIcon.sad;
       default:
         return MoodIcon.mellow;
     }
@@ -121,8 +124,7 @@ class _LandingPageState extends State<LandingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           Expanded(child: child),
         ],
@@ -130,12 +132,14 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
-  // Emotional Forecast --------------------------------------------------
+  // ---------------- EMOTIONAL FORECAST ------------------
 
   Widget _buildEmotionalForecast() {
+    final loc = AppLocalizations.of(context)!;
+
     if (_isLoadingData || _emotionalForecast == null) {
       return _panel(
-        title: "EMOTIONAL FORECAST",
+        title: loc.emotionalForecast,
         child: const Center(child: CircularProgressIndicator(color: Colors.black)),
       );
     }
@@ -145,7 +149,7 @@ class _LandingPageState extends State<LandingPage> {
     final total = _emotionalForecast!['total_tracks_analyzed'] ?? 0;
 
     return _panel(
-      title: "EMOTIONAL FORECAST",
+      title: loc.emotionalForecast,
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,8 +165,7 @@ class _LandingPageState extends State<LandingPage> {
               ),
             ]),
             const SizedBox(height: 24),
-            const Text("WEEKLY FORECAST",
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(loc.weeklyForecast, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             ...week.map<Widget>((d) {
               return Padding(
@@ -179,39 +182,40 @@ class _LandingPageState extends State<LandingPage> {
               );
             }),
             const SizedBox(height: 12),
-            Text("Based on $total tracks analyzed",
-                style: const TextStyle(fontSize: 11)),
+            Text(loc.tracksAnalyzed(total), style: const TextStyle(fontSize: 11)),
           ],
         ),
       ),
     );
   }
 
-  // Recently Played -----------------------------------------------------
+  // ---------------- RECENTLY PLAYED ------------------
 
   Widget _buildRecentlyPlayed() {
+    final loc = AppLocalizations.of(context)!;
+
     if (_isLoadingData) {
       return _panel(
-        title: "RECENTLY PLAYED",
+        title: loc.recentlyPlayed,
         child: const Center(child: CircularProgressIndicator(color: Colors.black)),
       );
     }
 
     if (_recentTracks.isEmpty) {
       return _panel(
-        title: "RECENTLY PLAYED",
-        child: const Center(child: Text("No recent tracks found")),
+        title: loc.recentlyPlayed,
+        child: Center(child: Text(loc.noRecentTracks)),
       );
     }
 
     return _panel(
-      title: "RECENTLY PLAYED",
+      title: loc.recentlyPlayed,
       child: ListView.separated(
         itemCount: _recentTracks.length,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (_, i) {
           final t = _recentTracks[i];
-         return InkWell(
+          return InkWell(
             onTap: () async {
               final url = t['external_url'];
               if (url != null) {
@@ -221,57 +225,49 @@ class _LandingPageState extends State<LandingPage> {
                 }
               }
             },
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.network(
-                    t['image_url'] ?? "",
+            child: Row(children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.network(
+                  t['image_url'] ?? "",
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
                     width: 48,
                     height: 48,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 48,
-                      height: 48,
-                      color: Colors.grey[300],
+                    color: Colors.grey[300],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t['name'] ?? loc.unknown,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      t['artist'] ?? loc.unknown,
+                      style: const TextStyle(color: Colors.black54),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t['name'] ?? "Unknown",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        t['artist'] ?? "Unknown",
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ]),
           );
         },
       ),
     );
   }
 
-  // Playlist cards ------------------------------------------------------
+  // ---------------- PLAYLIST CARDS ------------------
 
   Widget _playlistCard(int index, {bool small = false}) {
+    final loc = AppLocalizations.of(context)!;
+
     if (index >= _playlists.length) {
-      return _panel(title: "RECOMMENDED", child: Container());
+      return _panel(title: loc.recommended, child: Container());
     }
 
     final p = _playlists[index];
@@ -287,101 +283,102 @@ class _LandingPageState extends State<LandingPage> {
         }
       },
       child: _panel(
-        title: small ? "RECOMMENDED" : "MOST RECOMMENDED",
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (p['image_url'] != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.network(
-                    p['image_url'],
-                    height: small ? 80 : 100,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                )
-              else
-                Container(
+        title: small ? loc.recommended : loc.mostRecommended,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (p['image_url'] != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.network(
+                  p['image_url'],
                   height: small ? 80 : 100,
-                  color: Colors.grey[300],
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                 ),
-              const SizedBox(height: 8),
-              Text(
-                p['name'] ?? "Unknown",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+              )
+            else
+              Container(
+                height: small ? 80 : 100,
+                color: Colors.grey[300],
               ),
-              Text(
-                "${p['tracks_count']} tracks",
-                style: const TextStyle(fontSize: 11),
-              ),
-            ],
-          ),
+            const SizedBox(height: 8),
+            Text(p['name'] ?? loc.unknown,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(loc.trackCount(p['tracks_count']),
+                style: const TextStyle(fontSize: 11)),
+          ],
         ),
       ),
     );
-
   }
 
-  // Build UI ------------------------------------------------------------
+  // ---------------- UI ------------------
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        elevation: 0,
         backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
+          IconButton(
+            onPressed: widget.onToggleLanguage,
+            icon: const Icon(Icons.language, color: Colors.black),
+          ),
           if (_userInfo != null)
-            Row(children: [
-              Text(
-                _userInfo!['display_name'] ?? "User",
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                onPressed: _logout,
-                icon: const Icon(Icons.logout, color: Colors.black),
-              ),
-            ])
+            Row(
+              children: [
+                Text(_userInfo!['display_name'] ?? loc.user,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                IconButton(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout, color: Colors.black)),
+              ],
+            ),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(children: [
-          // Left
-          Expanded(flex: 1, child: _buildEmotionalForecast()),
+        child: Row(
+          children: [
+            // LEFT PANEL
+            Expanded(flex: 1, child: _buildEmotionalForecast()),
 
-          const SizedBox(width: 16),
+            const SizedBox(width: 16),
 
-          // Middle
-          Expanded(
-            flex: 1,
-            child: Column(children: [
-              Expanded(flex: 2, child: _buildRecentlyPlayed()),
-              const SizedBox(height: 12),
-              Expanded(flex: 1, child: _playlistCard(0)),
-            ]),
-          ),
+            // MIDDLE COLUMN
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  Expanded(child: _buildRecentlyPlayed()),
+                  const SizedBox(height: 12),
+                  Expanded(child: _playlistCard(0, small: true)),
+                ],
+              ),
+            ),
 
-          const SizedBox(width: 16),
+            const SizedBox(width: 16),
 
-          // Right
-          Expanded(
-            flex: 1,
-            child: Column(children: [
-              Expanded(child: _playlistCard(1, small: true)),
-              const SizedBox(height: 12),
-              Expanded(child: _playlistCard(2, small: true)),
-              const SizedBox(height: 12),
-              Expanded(child: _playlistCard(3, small: true)),
-            ]),
-          ),
-        ]),
+            // RIGHT COLUMN
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  Expanded(child: _playlistCard(1, small: true)),
+                  const SizedBox(height: 12),
+                  Expanded(child: _playlistCard(2, small: true)),
+                  const SizedBox(height: 12),
+                  Expanded(child: _playlistCard(3, small: true)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

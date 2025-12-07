@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodel/auth_viewmodel.dart';
 import '../services/spotify_service.dart';
+import '../l10n/app_localizations.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  // final VoidCallback onToggleLanguage;
+  const LoginPage({super.key, this.onToggleLanguage});
+
+  final VoidCallback? onToggleLanguage;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -16,6 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _showManualEntry = false;
   String? _errorMessage;
+
 
   @override
   void initState() {
@@ -124,6 +129,13 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Title Box
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: widget.onToggleLanguage,
+                    child: const Text("ES / EN"),
+                  ),
+                ),
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -131,10 +143,10 @@ class _LoginPageState extends State<LoginPage> {
                     border: Border.all(color: Colors.black, width: 2),
                   ),
                   child: Column(
-                    children: const [
+                    children: [
                       Text(
-                        'MP-X',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.title,
+                        style: const TextStyle(
                           fontSize: 48,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 2,
@@ -142,8 +154,8 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'MOOD TRACKER',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.subtitle,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 3,
@@ -155,10 +167,10 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 48),
 
-                const Text(
-                  "Connect with Spotify to create personalized mood-balancing playlists based on your emotional state.",
+                Text(
+                  AppLocalizations.of(context)!.loginDescription,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, height: 1.4),
+                  style: const TextStyle(fontSize: 16, height: 1.4),
                 ),
 
                 const SizedBox(height: 36),
@@ -195,12 +207,12 @@ class _LoginPageState extends State<LoginPage> {
                           )
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
+                            children: [
                               Icon(Icons.music_note, size: 18),
                               SizedBox(width: 12),
                               Text(
-                                "CONTINUE WITH SPOTIFY",
-                                style: TextStyle(
+                                AppLocalizations.of(context)!.continueWithSpotify,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.1,
@@ -219,8 +231,8 @@ class _LoginPageState extends State<LoginPage> {
                       setState(() => _showManualEntry = !_showManualEntry),
                   child: Text(
                     _showManualEntry
-                        ? "Hide Manual Entry"
-                        : "Enter Authorization Code Manually",
+                        ? AppLocalizations.of(context)!.hideManualEntry
+                        : AppLocalizations.of(context)!.enterCodeManually,
                     style: const TextStyle(
                       decoration: TextDecoration.underline,
                     ),
@@ -231,8 +243,8 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: _codeController,
-                    decoration: const InputDecoration(
-                      labelText: "Authorization Code",
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.authorizationCode,
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -245,7 +257,7 @@ class _LoginPageState extends State<LoginPage> {
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
                       ),
-                      child: const Text("SUBMIT CODE"),
+                        child: Text(AppLocalizations.of(context)!.submitCode),
                     ),
                   ),
                 ],
@@ -260,9 +272,9 @@ class _LoginPageState extends State<LoginPage> {
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.black, width: 2),
                     ),
-                    child: const Text(
-                      "CHECK STATUS",
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context)!.checkStatus,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.1,

@@ -1,0 +1,41 @@
+{
+  "@@locale": "en",
+  "title": "MUSIC VIBE",
+  "subtitle": "MP-X",
+  "loginDescription": "Connect with Spotify to create personalized mood-balancing playlists based on your emotional state.",
+  "continueWithSpotify": "CONTINUE WITH SPOTIFY",
+  "enterCodeManually": "Enter Authorization Code Manually",
+  "hideManualEntry": "Hide Manual Entry",
+  "authorizationCode": "Authorization Code",
+  "submitCode": "SUBMIT CODE",
+  "checkStatus": "CHECK STATUS",
+  "notAuthenticated": "Not authenticated yet.",
+  
+  "emotionalForecast": "EMOTIONAL FORECAST",
+  "weeklyForecast": "WEEKLY FORECAST",
+  "recentlyPlayed": "RECENTLY PLAYED",
+  "recommended": "RECOMMENDED",
+  "mostRecommended": "MOST RECOMMENDED",
+  "noRecentTracks": "No recent tracks found",
+  "unknown": "Unknown",
+  "user": "User",
+
+  "trackCount": "{count} tracks",
+  "@trackCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "tracksAnalyzed": "Based on {count} tracks analyzed",
+  "@tracksAnalyzed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}
+

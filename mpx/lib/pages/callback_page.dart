@@ -5,8 +5,13 @@ import 'landing_page.dart';
 
 class CallbackPage extends StatefulWidget {
   final Uri uri;
+  final VoidCallback onToggleLanguage;
 
-  const CallbackPage({required this.uri, super.key});
+  const CallbackPage({
+    required this.uri,
+    required this.onToggleLanguage,
+    super.key,
+  });
 
   @override
   State<CallbackPage> createState() => _CallbackPageState();
@@ -24,7 +29,11 @@ class _CallbackPageState extends State<CallbackPage> {
       authVM.handleCallback(code).then((_) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LandingPage()),
+          MaterialPageRoute(
+            builder: (_) => LandingPage(
+              onToggleLanguage: widget.onToggleLanguage,
+            ),
+          ),
         );
       });
     }
