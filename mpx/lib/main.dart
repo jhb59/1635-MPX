@@ -40,9 +40,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthViewModel()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => AuthViewModel())],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: "MPX",
@@ -54,19 +52,11 @@ class _MyAppState extends State<MyApp> {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: const [
-          Locale('en'),
-          Locale('es'),
-        ],
+        supportedLocales: const [Locale('en'), Locale('es')],
 
         home: widget.isCallback
-            ? CallbackPage(
-                uri: widget.uri,
-                onToggleLanguage: _toggleLanguage,
-              )
-            : LoginPage(
-                onToggleLanguage: _toggleLanguage,
-              ),
+            ? CallbackPage(uri: widget.uri, onToggleLanguage: _toggleLanguage)
+            : LoginPage(onToggleLanguage: _toggleLanguage),
       ),
     );
   }

@@ -3,7 +3,7 @@ import '../services/auth_service.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _auth;
-  
+
   AuthViewModel() : _auth = AuthService();
   AuthViewModel.test(this._auth);
 

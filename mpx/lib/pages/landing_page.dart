@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-
 import '../services/spotify_service.dart';
 import '../services/auth_service.dart';
 import '../models/mood_data.dart';
@@ -10,7 +9,6 @@ import '../l10n/app_localizations.dart';
 
 class LandingPage extends StatefulWidget {
   final VoidCallback onToggleLanguage;
-
   const LandingPage({super.key, required this.onToggleLanguage});
 
   @override
@@ -29,8 +27,8 @@ class _LandingPageState extends State<LandingPage>
   List<Map<String, dynamic>> _playlists = [];
   List<Map<String, dynamic>> _recentTracks = [];
 
-late final AnimationController _iconController;
-late final Animation<Offset> _iconSlide;
+  late final AnimationController _iconController;
+  late final Animation<Offset> _iconSlide;
 
   @override
   void initState() {
@@ -41,13 +39,13 @@ late final Animation<Offset> _iconSlide;
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
-    _iconSlide = Tween<Offset>(
-      begin: const Offset(-0.1, 0),
-      end: const Offset(0.1, 0),
-    ).animate(CurvedAnimation(
-      parent: _iconController,
-      curve: Curves.easeInOut,
-    ));
+    _iconSlide =
+        Tween<Offset>(
+          begin: const Offset(-0.1, 0),
+          end: const Offset(0.1, 0),
+        ).animate(
+          CurvedAnimation(parent: _iconController, curve: Curves.easeInOut),
+        );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserInfo();
@@ -60,7 +58,6 @@ late final Animation<Offset> _iconSlide;
     _iconController.dispose();
     super.dispose();
   }
-
 
   Future<void> _loadUserInfo() async {
     final data = await _authService.getUserInfo();
@@ -136,14 +133,10 @@ late final Animation<Offset> _iconSlide;
         icons[icon]!,
         width: size,
         height: size,
-        colorFilter: const ColorFilter.mode(
-          Colors.black,
-          BlendMode.srcIn,
-        ),
+        colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
       ),
     );
   }
-
 
   Widget _panel({required String title, required Widget child}) {
     return Container(
@@ -171,8 +164,9 @@ late final Animation<Offset> _iconSlide;
     if (_isLoadingData || _emotionalForecast == null) {
       return _panel(
         title: loc.emotionalForecast,
-        child:
-            const Center(child: CircularProgressIndicator(color: Colors.black)),
+        child: const Center(
+          child: CircularProgressIndicator(color: Colors.black),
+        ),
       );
     }
 
@@ -186,37 +180,51 @@ late final Animation<Offset> _iconSlide;
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              _buildMoodIcon(mood, size: 80),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  _emotionalForecast!['overall_mood'] ?? "",
-                  style: const TextStyle(
-                      fontSize: 36, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                _buildMoodIcon(mood, size: 80),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    _emotionalForecast!['overall_mood'] ?? "",
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
             const SizedBox(height: 24),
-            Text(loc.weeklyForecast,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              loc.weeklyForecast,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             ...week.map<Widget>((d) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Row(children: [
-                  SizedBox(width: 60, child: Text(d['day'] ?? "")),
-                  _buildMoodIcon(_moodToIcon(d['mood']), size: 30),
-                  const SizedBox(width: 12),
-                  Text(d['mood'] ?? "",
+                child: Row(
+                  children: [
+                    SizedBox(width: 60, child: Text(d['day'] ?? "")),
+                    _buildMoodIcon(_moodToIcon(d['mood']), size: 30),
+                    const SizedBox(width: 12),
+                    Text(
+                      d['mood'] ?? "",
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 18)),
-                ]),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
+                ),
               );
             }),
             const SizedBox(height: 12),
-            Text(loc.tracksAnalyzed(total),
-                style: const TextStyle(fontSize: 11)),
+            Text(
+              loc.tracksAnalyzed(total),
+              style: const TextStyle(fontSize: 11),
+            ),
           ],
         ),
       ),
@@ -231,8 +239,9 @@ late final Animation<Offset> _iconSlide;
     if (_isLoadingData) {
       return _panel(
         title: loc.recentlyPlayed,
-        child:
-            const Center(child: CircularProgressIndicator(color: Colors.black)),
+        child: const Center(
+          child: CircularProgressIndicator(color: Colors.black),
+        ),
       );
     }
 
@@ -262,10 +271,7 @@ late final Animation<Offset> _iconSlide;
               final uri = Uri.parse(url.toString());
 
               if (await canLaunchUrl(uri)) {
-                await launchUrl(
-                  uri,
-                  mode: LaunchMode.externalApplication,
-                );
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
               } else {
                 debugPrint("Could not launch Spotify URL: $url");
               }
@@ -274,7 +280,8 @@ late final Animation<Offset> _iconSlide;
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: t['image_url'] != null &&
+                  child:
+                      t['image_url'] != null &&
                           t['image_url'].toString().isNotEmpty
                       ? Image.network(
                           t['image_url'],
@@ -314,7 +321,6 @@ late final Animation<Offset> _iconSlide;
     );
   }
 
-
   // ---------------- PLAYLIST CARDS ------------------
 
   Widget _playlistCard(int index, {bool small = false}) {
@@ -345,7 +351,7 @@ late final Animation<Offset> _iconSlide;
                           color: Colors.black.withOpacity(0.25),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
-                        )
+                        ),
                       ]
                     : [],
               ),
@@ -355,8 +361,10 @@ late final Animation<Offset> _iconSlide;
                   if (url != null) {
                     final uri = Uri.parse(url);
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri,
-                          mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   }
                 },
@@ -394,7 +402,7 @@ late final Animation<Offset> _iconSlide;
                         ],
                       ),
 
-                      // ✅ HOVER OVERLAY
+                      // HOVER OVERLAY
                       AnimatedOpacity(
                         opacity: isHovering ? 1.0 : 0.0,
                         duration: const Duration(milliseconds: 150),
@@ -424,78 +432,74 @@ late final Animation<Offset> _iconSlide;
 
   // ---------------- UI ------------------
 
-@override
-Widget build(BuildContext context) {
-  final loc = AppLocalizations.of(context)!;
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
 
-  return Scaffold(
-    backgroundColor: Colors.grey[100],
-    appBar: AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      actions: [
-        IconButton(
-          onPressed: widget.onToggleLanguage,
-          icon: const Icon(Icons.language, color: Colors.black),
-        ),
-        if (_userInfo != null)
-          Row(
-            children: [
-              Text(
-                _userInfo!['display_name'] ?? loc.user,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                onPressed: _logout,
-                icon: const Icon(Icons.logout, color: Colors.black),
-              ),
-            ],
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: widget.onToggleLanguage,
+            icon: const Icon(Icons.language, color: Colors.black),
           ),
-      ],
-    ),
-    body: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          // ✅ LEFT PANEL — EMOTIONAL FORECAST
-          Expanded(
-            flex: 1,
-            child: _buildEmotionalForecast(),
-          ),
-
-          const SizedBox(width: 16),
-
-          // ✅ MIDDLE COLUMN — RECENT + TOP PLAYLIST
-          Expanded(
-            flex: 1,
-            child: Column(
+          if (_userInfo != null)
+            Row(
               children: [
-                Expanded(child: _buildRecentlyPlayed()),
-                const SizedBox(height: 12),
-                Expanded(child: _playlistCard(0, small: true)),
+                Text(
+                  _userInfo!['display_name'] ?? loc.user,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  onPressed: _logout,
+                  icon: const Icon(Icons.logout, color: Colors.black),
+                ),
               ],
             ),
-          ),
-
-          const SizedBox(width: 16),
-
-          // ✅ RIGHT COLUMN — 3 RECOMMENDED PLAYLISTS
-          Expanded(
-            flex: 1,
-            child: Column(
-              children: [
-                Expanded(child: _playlistCard(1, small: true)),
-                const SizedBox(height: 12),
-                Expanded(child: _playlistCard(2, small: true)),
-                const SizedBox(height: 12),
-                Expanded(child: _playlistCard(3, small: true)),
-              ],
-            ),
-          ),
         ],
       ),
-    ),
-  );
-}
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // LEFT PANEL — EMOTIONAL FORECAST
+            Expanded(flex: 1, child: _buildEmotionalForecast()),
 
+            const SizedBox(width: 16),
+
+            // MIDDLE COLUMN — RECENT + TOP PLAYLIST
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  Expanded(child: _buildRecentlyPlayed()),
+                  const SizedBox(height: 12),
+                  Expanded(child: _playlistCard(0, small: true)),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 16),
+
+            // RIGHT COLUMN — 3 RECOMMENDED PLAYLISTS
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  Expanded(child: _playlistCard(1, small: true)),
+                  const SizedBox(height: 12),
+                  Expanded(child: _playlistCard(2, small: true)),
+                  const SizedBox(height: 12),
+                  Expanded(child: _playlistCard(3, small: true)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

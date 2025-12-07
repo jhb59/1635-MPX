@@ -5,7 +5,7 @@ class SpotifyViewModel extends ChangeNotifier {
   final SpotifyService _spotifyService = SpotifyService();
 
   bool _loading = false;
-  List<Map<String, dynamic>> _tracks = [];  
+  List<Map<String, dynamic>> _tracks = [];
   String? _error;
 
   bool get loading => _loading;
@@ -17,7 +17,7 @@ class SpotifyViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _tracks = await _spotifyService.getRecentlyPlayedTracks(limit: 10);  
+      _tracks = await _spotifyService.getRecentlyPlayedTracks(limit: 10);
     } catch (e) {
       _error = e.toString();
     }

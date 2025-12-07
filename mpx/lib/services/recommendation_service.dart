@@ -5,13 +5,17 @@ import 'spotify_service.dart';
 class RecommendationService {
   final SpotifyService _spotifyService = SpotifyService();
 
-  Future<List<Map<String, dynamic>>> getRecommendationsForMood(String mood) async {
+  Future<List<Map<String, dynamic>>> getRecommendationsForMood(
+    String mood,
+  ) async {
     try {
       final moodLower = mood.toLowerCase();
       Map<String, dynamic> features = _moodToAudioFeatures(moodLower);
       List<String> genres = _moodToGenres(moodLower);
 
-      print('Getting recommendations for mood: $moodLower with genres: ${genres.join(", ")}');
+      print(
+        'Getting recommendations for mood: $moodLower with genres: ${genres.join(", ")}',
+      );
 
       try {
         final rawTracks = await _spotifyService.getRecommendations(
@@ -24,7 +28,7 @@ class RecommendationService {
         if (rawTracks.isNotEmpty) {
           print('Received ${rawTracks.length} raw tracks from Spotify');
 
-          // Convert all raw Spotify tracks → your UI map format
+          // Convert all raw Spotify tracks 
           final formattedTracks = rawTracks.map<Map<String, dynamic>>((track) {
             try {
               final formatted = _spotifyService.formatTrack(track);
@@ -33,8 +37,11 @@ class RecommendationService {
               print('Error formatting track: $e');
               return {
                 'name': track['name']?.toString() ?? 'Unknown',
-                'artist': (track['artists'] as List?)?[0]?['name']?.toString() ?? 'Unknown',
-                'image_url': (track['album'] as Map?)?['images']?[0]?['url']?.toString(),
+                'artist':
+                    (track['artists'] as List?)?[0]?['name']?.toString() ??
+                    'Unknown',
+                'image_url': (track['album'] as Map?)?['images']?[0]?['url']
+                    ?.toString(),
               };
             }
           }).toList();
@@ -57,14 +64,17 @@ class RecommendationService {
   }
 
   // Fallback method using search API
-  Future<List<Map<String, dynamic>>> _getSearchBasedRecommendations(String mood, List<String> genres) async {
+  Future<List<Map<String, dynamic>>> _getSearchBasedRecommendations(
+    String mood,
+    List<String> genres,
+  ) async {
     try {
       // Use the first genre for search
       final searchGenre = genres.isNotEmpty ? genres.first : 'pop';
       final searchQuery = '$searchGenre $mood';
-      
+
       print('Searching for tracks: $searchQuery');
-      
+
       final token = await _spotifyService.getAccessToken();
       if (token == null) {
         print('No access token for search fallback');
@@ -72,24 +82,24 @@ class RecommendationService {
       }
 
       final response = await http.get(
-        Uri.parse('https://api.spotify.com/v1/search?q=${Uri.encodeComponent(searchQuery)}&type=track&limit=20'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        Uri.parse(
+          'https://api.spotify.com/v1/search?q=${Uri.encodeComponent(searchQuery)}&type=track&limit=20',
+        ),
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final tracks = (data['tracks']?['items'] as List? ?? []);
         print('Found ${tracks.length} tracks via search');
-        
+
         return tracks.map<Map<String, dynamic>>((track) {
           return _spotifyService.formatTrack(track);
         }).toList();
       } else {
         print('Search API failed: ${response.statusCode} - ${response.body}');
       }
-      
+
       return [];
     } catch (e) {
       print('Error in search-based recommendations: $e');
@@ -132,4 +142,3 @@ class RecommendationService {
     }
   }
 }
-

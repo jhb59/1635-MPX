@@ -30,9 +30,8 @@ class _CallbackPageState extends State<CallbackPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => LandingPage(
-              onToggleLanguage: widget.onToggleLanguage,
-            ),
+            builder: (_) =>
+                LandingPage(onToggleLanguage: widget.onToggleLanguage),
           ),
         );
       });
@@ -41,8 +40,6 @@ class _CallbackPageState extends State<CallbackPage> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
