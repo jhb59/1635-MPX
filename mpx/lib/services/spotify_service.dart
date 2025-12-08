@@ -374,19 +374,28 @@ Future<List<Map<String, dynamic>>> getRecentlyPlayedTracks({int limit = 50}) asy
       return items.map((item) {
         final track = item['track'] ?? {};
         final artists = track['artists'] as List? ?? [];
+        final album = track['album'] as Map<String, dynamic>?;
+        final images = album?['images'] as List? ?? [];
+
         return {
           'id': track['id'],
           'name': track['name'],
-          'artist': artists.isNotEmpty
-              ? artists[0]['name']
-              : 'Unknown',
-          'artist_id': artists.isNotEmpty
-              ? artists[0]['id']
+          'artist': artists.isNotEmpty ? artists[0]['name'] : 'Unknown',
+          'artist_id': artists.isNotEmpty ? artists[0]['id'] : null,
+
+          //REQUIRED FOR UI
+          'image_url': images.isNotEmpty
+              ? images[0]['url']?.toString().replaceFirst('http://', 'https://')
               : null,
-          'album': track['album']?['name'] ?? 'Unknown',
+
+          //REQUIRED FOR CLICK
+          'external_url': track['external_urls']?['spotify'],
+
+          'album': album?['name'] ?? 'Unknown',
           'played_at': item['played_at'],
         };
       }).toList();
+
     } else if (response.statusCode == 401) {
       print('Authentication expired for recently played tracks');
       throw Exception('Authentication expired. Please login again.');
