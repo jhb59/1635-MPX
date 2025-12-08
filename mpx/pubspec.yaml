@@ -80,12 +80,7 @@ flutter:
     - assets/icons/sun.svg
     - assets/icons/cloud.svg
     - assets/icons/cloud_rain.svg
-    - assets/icons/cloud_sun.svg
-    - assets/icons/sad.svg
-    - assets/icons/cloud-01.svg
-    - assets/icons/cloud-raining-01.svg
     - assets/icons/cloud-raining-02.svg
-    - assets/icons/cloud-sun-01.svg
     - assets/icons/cloud-sun-02.svg
 
   # localization:

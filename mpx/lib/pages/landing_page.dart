@@ -111,6 +111,8 @@ class _LandingPageState extends State<LandingPage>
         return MoodIcon.sunny;
       case 'SAD':
         return MoodIcon.sad;
+      case 'MELLOW':
+        return MoodIcon.mellow;
       case 'UNREADABLE':
         return MoodIcon.sad;
       default:
@@ -123,8 +125,8 @@ class _LandingPageState extends State<LandingPage>
       MoodIcon.sunny: 'assets/icons/sun.svg',
       MoodIcon.cloudy: 'assets/icons/cloud.svg',
       MoodIcon.rainy: 'assets/icons/cloud_rain.svg',
-      MoodIcon.sad: 'assets/icons/sad.svg',
-      MoodIcon.mellow: 'assets/icons/cloud_sun.svg',
+      MoodIcon.sad: 'assets/icons/cloud-raining-02.svg',
+      MoodIcon.mellow: 'assets/icons/cloud-sun-02.svg',
     };
 
     return SlideTransition(
@@ -476,7 +478,7 @@ class _LandingPageState extends State<LandingPage>
               child: Column(
                 children: [
                   Expanded(child: _buildRecentlyPlayed()),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Expanded(child: _playlistCard(0, small: true)),
                 ],
               ),
@@ -490,9 +492,9 @@ class _LandingPageState extends State<LandingPage>
               child: Column(
                 children: [
                   Expanded(child: _playlistCard(1, small: true)),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Expanded(child: _playlistCard(2, small: true)),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Expanded(child: _playlistCard(3, small: true)),
                 ],
               ),
