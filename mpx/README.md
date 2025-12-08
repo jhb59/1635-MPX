@@ -46,9 +46,34 @@ Music Vibe integrates multiple Spotify endpoints:
 
 ## Build Instructions and Dependencies 
 **Instructions**  
-- run 'flutter pub get'  
-- run 'flutter build web'  
-- run 'firebase deploy --only hosting --project music-vibe-718b5'   
+### Spotify API Setup (Required)
+
+This project uses the Spotify Web API. For security reasons, API keys are not included.
+
+### Steps:
+1. Create a Spotify Developer App:
+   https://developer.spotify.com/dashboard
+
+2. Add this Redirect URI:
+   http://127.0.0.1:49374/callback         
+   https://music-vibe-718b5.web.app/callback      
+
+3. Copy your **Client ID** and **Client Secret**
+
+4. Open:
+   lib/services/spotify_service.dart
+
+5. Replace:
+
+   static const String clientId = 'YOUR_SPOTIFY_CLIENT_ID';
+   static const String clientSecret = 'YOUR_SPOTIFY_CLIENT_SECRET';
+
+    with your real credentials.  
+
+6. Run Flutter:
+    run 'flutter pub get'  
+    run 'flutter build web'  
+    run 'firebase deploy --only hosting --project music-vibe-718b5'   
 
 **Dependencies**
 * Provider 

@@ -6,10 +6,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 class SpotifyService {
 //Client ID and Client Secret for Spotify API
-static const String clientId = '0b3e4123d27f445ea87bd7636f48c3db';
-static const String clientSecret = '854da81104eb4e8296fd535f1fcf0fca';
 
+//REPLACE HERE WITH YOUR OWN KEYS
+static const String clientId = 'YOUR_SPOTIFY_CLIENT_ID';
+static const String clientSecret = 'YOUR_SPOTIFY_CLIENT_SECRET';
 
+//REDIRECT URLS (SHOULD BE IN YOUR SPOTIFY API AS WELL)
 static const String redirectUri = kIsWeb
   ? "https://music-vibe-718b5.web.app/callback"
   : "http://127.0.0.1:49374/callback";
